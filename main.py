@@ -1,8 +1,10 @@
 """Housing Preference Pipeline — CLI entry point.
 
 Usage:
-    python main.py "I'm a software engineer in SF with a dog, budget $3k/month rent"
-    echo "description" | python main.py
+    python main.py                          # interactive mode
+    python main.py -i                       # interactive mode (explicit)
+    python main.py "description here"       # one-shot mode
+    echo "description" | python main.py     # pipe mode
 """
 
 import json
@@ -75,15 +77,49 @@ def run(description: str) -> None:
         print()
 
 
+def interactive() -> None:
+    """Run an interactive REPL loop."""
+    print("=" * 60)
+    print("  Housing Preference Parser — Interactive Mode")
+    print("=" * 60)
+    print("Describe a person and their housing needs in plain English.")
+    print("Type 'quit' or 'exit' to stop. Press Ctrl+C to abort.\n")
+
+    while True:
+        try:
+            description = input(">> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nGoodbye!")
+            break
+
+        if not description:
+            continue
+        if description.lower() in ("quit", "exit", "q"):
+            print("Goodbye!")
+            break
+
+        print()
+        run(description)
+        print("-" * 60 + "\n")
+
+
 def main() -> None:
-    if len(sys.argv) > 1:
-        description = " ".join(sys.argv[1:])
-    elif not sys.stdin.isatty():
+    args = sys.argv[1:]
+
+    # Interactive mode: no args, or explicit -i flag
+    if not args and sys.stdin.isatty():
+        interactive()
+        return
+    if args == ["-i"]:
+        interactive()
+        return
+
+    # Pipe mode
+    if not args and not sys.stdin.isatty():
         description = sys.stdin.read().strip()
     else:
-        print("Usage: python main.py \"<person description>\"")
-        print("   or: echo \"<description>\" | python main.py")
-        sys.exit(1)
+        # One-shot mode: all args joined as the description
+        description = " ".join(args)
 
     if not description:
         print("Error: empty description provided.")
